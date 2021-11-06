@@ -119,17 +119,18 @@ public class client {
                 if(username.equals("0")){
                     break;
                 }
-
+                
                 boolean userRegistered = sendUserData(username,password,"0,U");
-
                 if(userRegistered){
-                    System.out.println("User Registered");
+                    System.out.println("\n\nUser Registered\n\n");
                     currentUser = username;
                     break;
                 }else{
-                    System.out.println("Invalid Credentials");
+                    System.out.println("\n\nInvalid Credentials\n\n");
                 }
             }
+            
+            Thread.sleep(500);
             
             //----------------LOGIN----------------//
            
@@ -143,19 +144,19 @@ public class client {
                 if(username.equals("0")){
                     break;
                 }
-
+                
                 userValidated = sendUserData(username,password,"1,U");
 
                 if(userValidated){
-                    System.out.println("Valid Credentials");
+                    System.out.println("\n\nValid Credentials\n\n");
                     //move to MAIN MENU GUI
                     break;
                 }else{
-                    System.out.println("Invalid Credentials");
+                    System.out.println("\n\nInvalid Credentials\n\n");
                 }
             }
             
-            
+            Thread.sleep(500);
             
             //--------------MAIN MENU-------------//
             while(userValidated){
@@ -385,6 +386,8 @@ public class client {
 
 
                     }
+                }else{
+                    return;
                 }
             
             }
@@ -407,6 +410,7 @@ public class client {
                 System.out.println("Error Sending User Data");
                 return false;
             }
+            
             
             Object receivedObject = myClient.receiveObject();
             

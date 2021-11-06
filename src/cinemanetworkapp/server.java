@@ -27,6 +27,8 @@ import java.util.ArrayList;
 public class server {
     static DatagramSocket serverSocket;
     static ArrayList<Movie> mylist = new ArrayList<>();
+    static ArrayList<Ticket> myTickets = new ArrayList<>();
+    static ArrayList<User> myUsers = new ArrayList<>();
     private InetAddress packetIP;
     private int packetPort;
     
@@ -100,7 +102,7 @@ public class server {
                             mylist.add(movieData);
                             
                             //Saving Data to file
-                            writeDataToFile();
+                            writeDataToFile("M");
                             
                             //Sending Response
                             myServer.sendResponse(new Message("DATA ADDED SUCCESSFULLY"), myServer.packetIP, myServer.packetPort);
@@ -154,6 +156,114 @@ public class server {
                 }
                 
             }
+            else if(receivedObject instanceof Message){
+                System.out.println("Received Message");
+                Message msgbj = (Message) receivedObject;
+                
+                String[] operation = msgbj.getData().split(",");
+                
+                if(operation[1].trim().equals("U")){
+                    
+                    User userObject = (User) myServer.receiveObject();
+                    
+                    if(operation[0].trim().equals("0")){
+                        System.out.println("Request to add User Data");
+                        System.out.println(userObject.toString());
+                        myUsers.add(userObject);
+
+                        //Saving Data to file
+                        writeDataToFile("U");
+
+                        //Sending Response
+                        myServer.sendResponse(new Message("success"), myServer.packetIP, myServer.packetPort);
+                        System.out.println("Response Sent");
+                        
+                    }else if(operation[0].trim().equals("1")){
+                        System.out.println("Request to Search by id");
+                        String searchUsnername = userObject.username;
+                        String searchPassword = userObject.password;
+                        boolean isFound=false;
+
+                        //Searching for username and password in list
+                        for (User usr: myUsers){
+                            if(usr.username.equalsIgnoreCase(searchUsnername) && usr.password.equalsIgnoreCase(searchPassword)){
+                                
+
+                            //sending response if found
+                            myServer.sendResponse(new Message("success"), myServer.packetIP, myServer.packetPort);
+                            System.out.println("Sending an Object\n");
+
+                            isFound=true;
+                            break;
+                            }
+
+                        }
+                        if(!isFound){
+                            myServer.sendResponse(new Message("Not Found\n"), myServer.packetIP, myServer.packetPort);
+                        }
+                    }
+                    
+                    
+                }else if(operation[1].trim().equals("T")){
+                    
+                    
+                    
+                    if(operation[0].trim().equals("0")){
+                        Ticket ticketObject = (Ticket) myServer.receiveObject();
+                        
+                        System.out.println("Request to add Ticket Data");
+                        System.out.println(ticketObject.toString());
+                        myTickets.add(ticketObject);
+
+                        //Saving Data to file
+                        writeDataToFile("T");
+
+                        //Sending Response
+                        myServer.sendResponse(new Message("Ticket Added Successfully"), myServer.packetIP, myServer.packetPort);
+                        System.out.println("Response Sent\n");
+                        
+                    }else if(operation[0].trim().equals("1")){
+                        System.out.println("Request to View All Tickets");
+                            
+                        //Calculating size of data to be sent
+                        int ticketCount = myTickets.size();
+                        if(ticketCount<1){
+                            myServer.sendResponse(new Message("No Ticket record found!"), myServer.packetIP, myServer.packetPort);
+                        }else{
+                            //Sending All data as Multiple Responses
+                            myServer.sendResponse(new Message("array-"+ticketCount), myServer.packetIP, myServer.packetPort);
+                            for (Ticket ticket: myTickets){
+                                myServer.sendResponse(ticket, myServer.packetIP, myServer.packetPort);
+                                System.out.println("Sending an Object\n");
+                            }
+                        }
+                    }else if(operation[0].trim().equals("2")){
+                        Ticket ticketObject = (Ticket) myServer.receiveObject();
+                        System.out.println("Request to Search by id");
+                        int searchid = ticketObject.id;
+                        boolean isFound=false;
+
+                        //Searching for username and password in list
+                        for (Ticket tkt: myTickets){
+                            if(tkt.id==searchid){
+                                
+
+                            //sending response if found
+                            myServer.sendResponse(tkt, myServer.packetIP, myServer.packetPort);
+                            System.out.println("Sending an Object\n");
+
+                            isFound=true;
+                            break;
+                            }
+
+                        }
+                        if(!isFound){
+                            myServer.sendResponse(new Message("Not Found"), myServer.packetIP, myServer.packetPort);
+                        }
+                    }
+                }
+                
+            }
             
         }
         
@@ -161,23 +271,56 @@ public class server {
     
     
     
-    public static void writeDataToFile() throws FileNotFoundException, IOException{
-        FileOutputStream fos = new FileOutputStream("movies.txt");
-        ObjectOutputStream oos = new ObjectOutputStream(fos);   
-        oos.writeObject(mylist);
-        oos.flush();
-        oos.close();
+    public static void writeDataToFile(String data) throws FileNotFoundException, IOException{
+        System.out.println("Writing Data\n");
+        if(data.equals("M")){
+            FileOutputStream fos = new FileOutputStream("movies.txt");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);   
+            oos.writeObject(mylist);
+            oos.flush();
+            oos.close();
+        }
+        
+        else if(data.equals("T")){
+            System.out.println("Writing Data to Tickets File");
+            FileOutputStream fos = new FileOutputStream("tickets.txt");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);   
+            oos.writeObject(myTickets);
+            oos.flush();
+            oos.close();
+        }
+        
+        else if(data.equals("U")){
+            System.out.println("Writing Data to Users File");
+            FileOutputStream fos = new FileOutputStream("users.txt");
+            ObjectOutputStream oos = new ObjectOutputStream(fos);   
+            oos.writeObject(myUsers);
+            oos.flush();
+            oos.close();
+        }
+        
     }
     
     public static void readDataFromFile() throws FileNotFoundException, IOException, ClassNotFoundException{
         
         File movieFile = new File("movies.txt");
-        if(!movieFile.exists() || movieFile.length()==0){
-            return;
-        }
-        ObjectInputStream ois = new ObjectInputStream(new FileInputStream("movies.txt"));
+        File ticketFile = new File("tickets.txt");
+        File userFile = new File("users.txt");
+        
+        if(movieFile.exists() || movieFile.length() != 0){
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("movies.txt"));
+            mylist = (ArrayList<Movie>) ois.readObject();
 
-        mylist = (ArrayList<Movie>) ois.readObject();
-        ois.close();
+        }
+        if(ticketFile.exists() || ticketFile.length() != 0){
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("tickets.txt"));
+            myTickets = (ArrayList<Ticket>) ois.readObject();
+        
+        }
+        if(userFile.exists() || userFile.length() != 0){
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream("users.txt"));
+            myUsers = (ArrayList<User>) ois.readObject();
+        }
+        
     }
 }
